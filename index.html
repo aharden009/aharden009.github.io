@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Health Tracker</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 1rem; background: #f9f9f9; }
+    .card { background: white; padding: 1rem; border-radius: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+    button { padding: 1rem; font-size: 1rem; width: 100%; border: none; border-radius: 0.5rem; margin-top: 1rem; }
+    input, label { padding: 0.5rem; font-size: 1rem; margin: 0.5rem 0; width: 100%; }
+    h2 { margin-top: 0; }
+    .checkbox-label { margin-left: 0.5rem; font-size: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 id="sheet-title">LOG</h2>
+    <form id="entry-form">
+      <!-- Dynamic Fields will go here -->
+    </form>
+    <button type="button" onclick="submitEntry()">Submit</button>
+    <button type="button" onclick="startVoice()">🎤 Start Voice</button>
+  </div>
+
+  <button id="switch-btn" onclick="switchSheet()">Switch to GYM</button>
+
+  <script>
+    let currentSheet = 'LOG'; // Default sheet
+    const synth = window.speechSynthesis;
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    // Sample header mappings
+    const headers = {
+      LOG: ['Description', 'Calories'],
+      GYM: ['Exercise', 'Weight', 'Reps', 'Time', 'Steps', 'Calories', 'Resting Heart Rate', 'High Heart Rate'],
+      DAILY: ['Meds', 'Weight', 'Mood', 'Energy']
+    };
+
+    // Switch between sheets
+    function switchSheet() {
+      if (currentSheet === 'LOG') {
+        currentSheet = 'GYM';
+        document.getElementById('switch-btn').textContent = 'Switch to DAILY';
+        document.getElementById('sheet-title').textContent = 'GYM';
+      } else if (currentSheet === 'GYM') {
+        currentSheet = 'DAILY';
+        document.getElementById('switch-btn').textContent = 'Switch to LOG';
+        document.getElementById('sheet-title').textContent = 'DAILY';
+      } else {
+        currentSheet = 'LOG';
+        document.getElementById('switch-btn').textContent = 'Switch to GYM';
+        document.getElementById('sheet-title').textContent = 'LOG';
+      }
+      generateFormFields();
+    }
+
+    // Generate form fields dynamically based on the selected sheet
+    function generateFormFields() {
+      const form = document.getElementById('entry-form');
+      form.innerHTML = ''; // Clear previous form fields
+      const selectedHeaders = headers[currentSheet];
+
+      selectedHeaders.forEach(header => {
+        const label = document.createElement('label');
+        label.textContent = header;
+
+        if (header === 'Meds') {
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.id = header.toLowerCase();
+          form.appendChild(label);
+          form.appendChild(checkbox);
+        } else if (header === 'Weight') {
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.id = header.toLowerCase();
+          form.appendChild(label);
+          form.appendChild(input);
+        } else {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.id = header.toLowerCase();
+          form.appendChild(label);
+          form.appendChild(input);
+        }
+      });
+    }
+
+    function speak(text) {
+      const utter = new SpeechSynthesisUtterance(text);
+      synth.speak(utter);
+    }
+
+    // Start voice input
+    function startVoice() {
+      speak(`Please say your ${headers[currentSheet][0]}`);
+      recognition.start();
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        const firstField = headers[currentSheet][0].toLowerCase();
+        document.getElementById(firstField).value = transcript;
+        speak(`You said ${transcript}. What is the next field?`);
+      };
+    }
+
+    // Submit the data to Google Sheets
+    function submitEntry() {
+      const formData = {};
+      const inputs = document.querySelectorAll('input');
+      inputs.forEach(input => {
+        if (input.type === 'checkbox') {
+          formData[input.id] = input.checked;
+        } else {
+          formData[input.id] = input.value;
+        }
+      });
+
+      const data = {
+        date: new Date().toLocaleDateString('en-US'),
+        ...formData
+      };
+
+      fetch('https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }).then(res => {
+        speak('Data saved successfully.');
+        alert('Saved!');
+        document.getElementById('entry-form').reset();
+      });
+    }
+
+    // Initialize the form
+    generateFormFields();
+  </script>
+</body>
+</html>
