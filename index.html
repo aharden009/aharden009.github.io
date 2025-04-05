@@ -32,7 +32,7 @@
 <body>
   <h2>Log Entry</h2>
 
-  <!-- Form for LOG Tab -->
+  <!-- LOG Form -->
   <form id="log-form" style="display: block;">
     <label for="description">Description:</label>
     <input type="text" id="description" required>
@@ -43,36 +43,29 @@
     <button type="submit">Submit</button>
   </form>
 
-  <!-- Form for GYM Tab -->
+  <!-- GYM Form -->
   <form id="gym-form" style="display: none;">
     <label for="exercise">Exercise:</label>
     <select id="exercise" required onchange="toggleFields()">
       <option value="">Select an exercise</option>
     </select>
 
-    <!-- Fields for WEIGHT + REPS -->
     <div id="gym-common-fields" style="display: none;">
       <label for="weight">Weight:</label>
       <input type="number" id="weight">
-
       <label for="reps">Reps:</label>
       <input type="number" id="reps">
     </div>
 
-    <!-- Fields for STEPPER / TREADMILL -->
     <div id="gym-cardio-fields" style="display: none;">
       <label for="time">Time (minutes):</label>
       <input type="number" id="time">
-
       <label for="steps">Steps:</label>
       <input type="number" id="steps">
-
       <label for="gym-calories">Calories:</label>
       <input type="number" id="gym-calories">
-
       <label for="resting-heart-rate">Resting Heart Rate:</label>
       <input type="number" id="resting-heart-rate">
-
       <label for="high-heart-rate">High Heart Rate:</label>
       <input type="number" id="high-heart-rate">
     </div>
@@ -80,18 +73,42 @@
     <button type="submit">Submit</button>
   </form>
 
-  <!-- Switch Button at the Bottom -->
+  <!-- DAILY Form -->
+  <form id="daily-form" style="display: none;">
+    <label for="daily-date">Date:</label>
+    <input type="text" id="daily-date" readonly>
+
+    <label for="meds">Meds:</label>
+    <input type="text" id="meds">
+
+    <label for="weight-daily">Weight:</label>
+    <input type="number" id="weight-daily" step="0.1">
+
+    <button type="submit">Submit</button>
+  </form>
+
+  <!-- Switch Button -->
   <button id="switch-tab" onclick="switchTab()">Switch to GYM</button>
 
   <script>
     let currentTab = 'LOG';
 
     function switchTab() {
-      const isLog = currentTab === 'LOG';
-      document.getElementById('log-form').style.display = isLog ? 'none' : 'block';
-      document.getElementById('gym-form').style.display = isLog ? 'block' : 'none';
-      document.getElementById('switch-tab').innerText = isLog ? 'Switch to LOG' : 'Switch to GYM';
-      currentTab = isLog ? 'GYM' : 'LOG';
+      const tabs = ['log-form', 'gym-form', 'daily-form'];
+      const labels = ['LOG', 'GYM', 'DAILY'];
+      const currentIndex = labels.indexOf(currentTab);
+      const nextIndex = (currentIndex + 1) % tabs.length;
+
+      tabs.forEach((id, i) => {
+        document.getElementById(id).style.display = (i === nextIndex) ? 'block' : 'none';
+      });
+
+      currentTab = labels[nextIndex];
+      document.getElementById('switch-tab').innerText = `Switch to ${labels[(nextIndex + 1) % labels.length]}`;
+
+      if (currentTab === 'DAILY') {
+        document.getElementById('daily-date').value = new Date().toLocaleDateString('en-US');
+      }
     }
 
     function toggleFields() {
@@ -101,7 +118,6 @@
       document.getElementById('gym-common-fields').style.display = isCardio ? 'none' : 'block';
     }
 
-    // Load exercise options from Google Sheets
     async function loadExercises() {
       try {
         const response = await fetch('https://script.google.com/macros/s/AKfycbxdFuoULF8xumcbzJwIHKMy2PrF-MnY16an47Ektn_E5UAbrEZOziJR3qlxH94e1au6/exec?func=getExerciseList');
@@ -121,7 +137,6 @@
 
     document.addEventListener('DOMContentLoaded', loadExercises);
 
-    // LOG form submission
     document.getElementById('log-form').addEventListener('submit', function (e) {
       e.preventDefault();
       const description = document.getElementById('description').value.toUpperCase();
@@ -146,7 +161,6 @@
       });
     });
 
-    // GYM form submission
     document.getElementById('gym-form').addEventListener('submit', function (e) {
       e.preventDefault();
       const exercise = document.getElementById('exercise').value.toUpperCase();
@@ -184,9 +198,35 @@
         alert('Failed to save data.');
       });
     });
+
+    document.getElementById('daily-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const data = {
+        date: document.getElementById('daily-date').value,
+        meds: document.getElementById('meds').value,
+        weight: parseFloat(document.getElementById('weight-daily').value)
+      };
+
+      fetch('https://script.google.com/macros/s/AKfycbxdFuoULF8xumcbzJwIHKMy2PrF-MnY16an47Ektn_E5UAbrEZOziJR3qlxH94e1au6/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sheet: 'DAILY', data })
+      })
+      .then(res => res.text())
+      .then(() => {
+        alert('Data saved successfully!');
+        document.getElementById('daily-form').reset();
+        document.getElementById('daily-date').value = new Date().toLocaleDateString('en-US');
+      })
+      .catch(err => {
+        console.error('Error:', err);
+        alert('Failed to save data.');
+      });
+    });
   </script>
 </body>
 </html>
+
 
 
 
