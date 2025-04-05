@@ -30,9 +30,9 @@
   </style>
 </head>
 <body>
-  <h2>Log Entry</h2>
+  <h2 id="form-title">Log Entry</h2>
 
-  <!-- LOG Form -->
+  <!-- Form for LOG Tab -->
   <form id="log-form" style="display: block;">
     <label for="description">Description:</label>
     <input type="text" id="description" required>
@@ -43,29 +43,36 @@
     <button type="submit">Submit</button>
   </form>
 
-  <!-- GYM Form -->
+  <!-- Form for GYM Tab -->
   <form id="gym-form" style="display: none;">
     <label for="exercise">Exercise:</label>
     <select id="exercise" required onchange="toggleFields()">
       <option value="">Select an exercise</option>
     </select>
 
+    <!-- Fields for WEIGHT + REPS -->
     <div id="gym-common-fields" style="display: none;">
       <label for="weight">Weight:</label>
       <input type="number" id="weight">
+
       <label for="reps">Reps:</label>
       <input type="number" id="reps">
     </div>
 
+    <!-- Fields for STEPPER / TREADMILL -->
     <div id="gym-cardio-fields" style="display: none;">
       <label for="time">Time (minutes):</label>
       <input type="number" id="time">
+
       <label for="steps">Steps:</label>
       <input type="number" id="steps">
+
       <label for="gym-calories">Calories:</label>
       <input type="number" id="gym-calories">
+
       <label for="resting-heart-rate">Resting Heart Rate:</label>
       <input type="number" id="resting-heart-rate">
+
       <label for="high-heart-rate">High Heart Rate:</label>
       <input type="number" id="high-heart-rate">
     </div>
@@ -73,42 +80,33 @@
     <button type="submit">Submit</button>
   </form>
 
-  <!-- DAILY Form -->
+  <!-- Form for DAILY Tab -->
   <form id="daily-form" style="display: none;">
-    <label for="daily-date">Date:</label>
-    <input type="text" id="daily-date" readonly>
+    <input type="hidden" id="daily-date" value="">
+    <label for="status">Status:</label>
+    <input type="text" id="status" required>
 
-    <label for="meds">Meds:</label>
-    <input type="text" id="meds">
-
-    <label for="weight-daily">Weight:</label>
-    <input type="number" id="weight-daily" step="0.1">
+    <label for="weight">Weight:</label>
+    <input type="number" id="weight" required>
 
     <button type="submit">Submit</button>
   </form>
 
-  <!-- Switch Button -->
+  <!-- Switch Button at the Bottom -->
   <button id="switch-tab" onclick="switchTab()">Switch to GYM</button>
 
   <script>
     let currentTab = 'LOG';
+    const appScriptUrl = 'https://script.google.com/macros/s/AKfycbxG55DNE-VvbY_QjgnM3jse0vPMupWKV6YlYioUNWI/dev';
 
     function switchTab() {
-      const tabs = ['log-form', 'gym-form', 'daily-form'];
-      const labels = ['LOG', 'GYM', 'DAILY'];
-      const currentIndex = labels.indexOf(currentTab);
-      const nextIndex = (currentIndex + 1) % tabs.length;
-
-      tabs.forEach((id, i) => {
-        document.getElementById(id).style.display = (i === nextIndex) ? 'block' : 'none';
-      });
-
-      currentTab = labels[nextIndex];
-      document.getElementById('switch-tab').innerText = `Switch to ${labels[(nextIndex + 1) % labels.length]}`;
-
-      if (currentTab === 'DAILY') {
-        document.getElementById('daily-date').value = new Date().toLocaleDateString('en-US');
-      }
+      const isLog = currentTab === 'LOG';
+      document.getElementById('log-form').style.display = isLog ? 'none' : 'block';
+      document.getElementById('gym-form').style.display = isLog ? 'none' : 'none';
+      document.getElementById('daily-form').style.display = isLog ? 'none' : 'none';
+      document.getElementById('switch-tab').innerText = isLog ? 'Switch to GYM' : 'Switch to LOG';
+      currentTab = isLog ? 'GYM' : 'LOG';
+      document.getElementById('form-title').innerText = currentTab;
     }
 
     function toggleFields() {
@@ -120,7 +118,7 @@
 
     async function loadExercises() {
       try {
-        const response = await fetch('https://script.google.com/macros/s/AKfycbxdFuoULF8xumcbzJwIHKMy2PrF-MnY16an47Ektn_E5UAbrEZOziJR3qlxH94e1au6/exec?func=getExerciseList');
+        const response = await fetch(appScriptUrl + '?func=getExerciseList');
         const list = await response.json();
         const dropdown = document.getElementById('exercise');
 
@@ -137,6 +135,7 @@
 
     document.addEventListener('DOMContentLoaded', loadExercises);
 
+    // LOG form submission
     document.getElementById('log-form').addEventListener('submit', function (e) {
       e.preventDefault();
       const description = document.getElementById('description').value.toUpperCase();
@@ -145,7 +144,7 @@
         calories: parseInt(document.getElementById('calories').value)
       };
 
-      fetch('https://script.google.com/macros/s/AKfycbxdFuoULF8xumcbzJwIHKMy2PrF-MnY16an47Ektn_E5UAbrEZOziJR3qlxH94e1au6/exec', {
+      fetch(appScriptUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sheet: 'LOG', data })
@@ -161,6 +160,7 @@
       });
     });
 
+    // GYM form submission
     document.getElementById('gym-form').addEventListener('submit', function (e) {
       e.preventDefault();
       const exercise = document.getElementById('exercise').value.toUpperCase();
@@ -183,7 +183,7 @@
         };
       }
 
-      fetch('https://script.google.com/macros/s/AKfycbxdFuoULF8xumcbzJwIHKMy2PrF-MnY16an47Ektn_E5UAbrEZOziJR3qlxH94e1au6/exec', {
+      fetch(appScriptUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sheet: 'GYM', data })
@@ -199,15 +199,16 @@
       });
     });
 
+    // DAILY form submission
     document.getElementById('daily-form').addEventListener('submit', function (e) {
       e.preventDefault();
       const data = {
-        date: document.getElementById('daily-date').value,
-        meds: document.getElementById('meds').value,
-        weight: parseFloat(document.getElementById('weight-daily').value)
+        date: new Date().toLocaleDateString(),
+        status: document.getElementById('status').value,
+        weight: parseInt(document.getElementById('weight').value),
       };
 
-      fetch('https://script.google.com/macros/s/AKfycbxdFuoULF8xumcbzJwIHKMy2PrF-MnY16an47Ektn_E5UAbrEZOziJR3qlxH94e1au6/exec', {
+      fetch(appScriptUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sheet: 'DAILY', data })
@@ -216,7 +217,6 @@
       .then(() => {
         alert('Data saved successfully!');
         document.getElementById('daily-form').reset();
-        document.getElementById('daily-date').value = new Date().toLocaleDateString('en-US');
       })
       .catch(err => {
         console.error('Error:', err);
@@ -226,6 +226,7 @@
   </script>
 </body>
 </html>
+
 
 
 
