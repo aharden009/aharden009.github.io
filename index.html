@@ -30,10 +30,8 @@
   </style>
 </head>
 <body>
-  <!-- Default Title (Log Entry) -->
   <h2 id="form-title">Log Entry</h2>
 
-  <!-- Form for LOG Tab -->
   <form id="log-form" style="display: block;">
     <label for="description">Description:</label>
     <input type="text" id="description" required>
@@ -44,16 +42,11 @@
     <button type="submit">Submit</button>
   </form>
 
-  <!-- Form for GYM Tab -->
   <form id="gym-form" style="display: none;">
-    
     <label for="exercise">Exercise:</label>
     <input list="exercise-list" id="exercise" required onchange="toggleFields()">
-    <datalist id="exercise-list">
-      <!-- Datalist options will be populated dynamically -->
-    </datalist>
+    <datalist id="exercise-list"></datalist>
 
-    <!-- Fields for WEIGHT + REPS -->
     <div id="gym-common-fields" style="display: none;">
       <label for="weight">Weight:</label>
       <input type="number" id="weight">
@@ -62,7 +55,6 @@
       <input type="number" id="reps">
     </div>
 
-    <!-- Fields for STEPPER / TREADMILL -->
     <div id="gym-cardio-fields" style="display: none;">
       <label for="time">Time (minutes):</label>
       <input type="number" id="time">
@@ -83,30 +75,22 @@
     <button type="submit">Submit</button>
   </form>
 
-  <!-- Form for Daily Tab -->
   <form id="daily-form" style="display: none;">
-    <!-- Weight Field: Optional -->
     <label for="weight">Weight (optional):</label>
-    <input type="text" id="weight"> <!-- Weight input field -->
+    <input type="text" id="weight">
 
-    <!-- Meds Field: Automatically set to X (hidden from view) -->
-    <input type="text" id="meds" value="X" style="display: none;" disabled> <!-- Meds field hidden -->
+    <input type="text" id="meds" value="X" style="display: none;" disabled>
+    <input type="text" id="date" style="display: none;" disabled>
 
-    <!-- Date Field: Auto-filled with today's date (hidden from view) -->
-    <input type="text" id="date" style="display: none;" disabled> <!-- Date field hidden -->
-
-    <!-- Submit button (now visible) -->
-    <button type="submit">Submit</button> <!-- Visible submit button -->
+    <button type="submit">Submit</button>
   </form>
 
-  <!-- Switch Button at the Bottom -->
   <button id="switch-tab" onclick="switchTab()">Switch to GYM</button>
 
   <script>
     let currentTab = 'LOG';
-    const appScriptUrl = 'https://script.google.com/macros/s/AKfycbxG55DNE-VvbY_QjgnM3jse0vPMupWKV6YlYioUNWI/dev';
+    const appScriptUrl = 'https://script.google.com/macros/s/AKfycbyOt7AFlvvqKO3Rv5gG6GRGzFiKM4aJFFPd06hAzkGV8vEyPfPbHRNFHoC7Mtgwl7Dy/exec';
 
-    // Switch between tabs
     function switchTab() {
       const isLog = currentTab === 'LOG';
       const isGym = currentTab === 'GYM';
@@ -117,24 +101,20 @@
       document.getElementById('daily-form').style.display = isDaily ? 'block' : 'none';
 
       document.getElementById('switch-tab').innerText = isLog ? 'Switch to GYM' : isGym ? 'Switch to DAILY' : 'Switch to LOG';
-      currentTab = isLog ? 'GYM' : isGym ? 'DAILY' : 'LOG'; // Toggle between LOG, GYM, and DAILY tabs
+      currentTab = isLog ? 'GYM' : isGym ? 'DAILY' : 'LOG';
 
-      // Set the correct title
       document.getElementById('form-title').innerText = isLog ? 'Log Entry' : isGym ? 'Gym Entry' : 'Daily Entry';
 
-      // If switching to GYM tab, load the exercises.
       if (currentTab === 'GYM') {
         loadExercises();
       }
 
-      // Set today's date in the daily form when it's active
       if (currentTab === 'DAILY') {
         document.getElementById('date').value = new Date().toLocaleDateString();
-        loadDailyData(); // Load the previously saved data for the Daily form if any
+        loadDailyData();
       }
     }
 
-    // Toggle between weight/reps and cardio fields based on exercise type
     function toggleFields() {
       const exercise = document.getElementById('exercise').value.toUpperCase();
       const isCardio = (exercise === 'STEPPER' || exercise === 'TREADMILL');
@@ -142,18 +122,13 @@
       document.getElementById('gym-common-fields').style.display = isCardio ? 'none' : 'block';
     }
 
-    // Load exercises from the Google Sheets data
     async function loadExercises() {
       try {
         const response = await fetch(appScriptUrl + '?func=getExerciseList');
         const list = await response.json();
-        
-        // Get unique exercises from the GYM sheet
         const exercises = [...new Set(list.map(item => item.EXERCISE))];
-        
         const datalist = document.getElementById('exercise-list');
-        datalist.innerHTML = ''; // Clear any previous options
-        
+        datalist.innerHTML = '';
         exercises.forEach(exercise => {
           const option = document.createElement('option');
           option.value = exercise;
@@ -164,14 +139,12 @@
       }
     }
 
-    // Save the daily data in localStorage to prevent it from resetting
     function saveDailyData() {
       const weight = document.getElementById('weight').value;
       const meds = document.getElementById('meds').value;
       localStorage.setItem('dailyData', JSON.stringify({ weight, meds }));
     }
 
-    // Load saved data from localStorage for the daily form
     function loadDailyData() {
       const savedData = JSON.parse(localStorage.getItem('dailyData'));
       if (savedData) {
@@ -180,7 +153,6 @@
       }
     }
 
-    // LOG form submission
     document.getElementById('log-form').addEventListener('submit', function (e) {
       e.preventDefault();
       const description = document.getElementById('description').value.toUpperCase();
@@ -205,7 +177,6 @@
       });
     });
 
-    // GYM form submission
     document.getElementById('gym-form').addEventListener('submit', function (e) {
       e.preventDefault();
       const exercise = document.getElementById('exercise').value.toUpperCase();
@@ -244,13 +215,12 @@
       });
     });
 
-    // Daily form submission
     document.getElementById('daily-form').addEventListener('submit', function (e) {
       e.preventDefault();
       const data = {
         date: document.getElementById('date').value,
-        weight: document.getElementById('weight').value || 'N/A', // Weight can be empty, default to 'N/A'
-        meds: 'X', // Meds field automatically filled with 'X'
+        weight: document.getElementById('weight').value || 'N/A',
+        meds: 'X',
       };
 
       fetch(appScriptUrl, {
@@ -261,7 +231,7 @@
       .then(res => res.text())
       .then(() => {
         alert('Daily data saved successfully!');
-        saveDailyData(); // Save daily data in localStorage
+        saveDailyData();
       })
       .catch(err => {
         console.error('Error:', err);
@@ -269,14 +239,7 @@
       });
     });
 
-    // Initialize the page with the default tab (LOG)
-    switchTab(); // Load the initial view
+    switchTab();
   </script>
 </body>
 </html>
-
-
-
-
-
-
